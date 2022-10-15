@@ -10,9 +10,36 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Todo {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  text      String
-  completed Boolean
+model User {
+  id        Int       @id @default(autoincrement())
+  address   String    @unique
+  alias     String?
+  name      String?
+  metadata  String?
+  Project   Project[]
+  Gentk     Gentk[]
+}
+
+model Project {
+  id        Int      @id @default(autoincrement())
+  issuerId  String   @unique
+  creatorId Int?
+  creator   User?    @relation(fields: [creatorId], references: [id])
+  price     String?
+  royalties String?
+  enabled   Boolean?
+  Gentk     Gentk[]
+}
+
+model Gentk {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime
+  token     String   @unique
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id])
+  minterId  Int
+  minter    User     @relation(fields: [minterId], references: [id])
+  metadata  Json?
+  iteration String
+  royalties String
 }
