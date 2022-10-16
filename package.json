@@ -12,11 +12,16 @@
     "generate": "prisma generate"
   },
   "dependencies": {
+    "@chakra-ui/react": "^2.3.5",
+    "@emotion/react": "^11.10.4",
+    "@emotion/styled": "^11.10.4",
     "@prisma/client": "4.3.1",
     "@tzkt/sdk-api": "^1.0.0",
-    "next": "12.1.0",
-    "react": "17.0.1",
-    "react-dom": "17.0.1",
+    "date-fns": "^2.29.3",
+    "framer-motion": "^7.5.3",
+    "next": "^12.3.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
     "swr": "^0.4.1"
   },
   "devDependencies": {

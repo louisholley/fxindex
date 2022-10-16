@@ -1,94 +1,127 @@
+import { Gentk, Project, User } from "@prisma/client";
+import {
+  Flex,
+  Heading,
+  Button,
+  Link,
+  Image,
+  TableContainer,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+} from "@chakra-ui/react";
 import { NextPage } from "next";
 import Head from "next/head";
-import { useMemo, useState } from "react";
-import { createTodo, deleteTodo, toggleTodo, useTodos } from "../api";
-import styles from "../styles/Home.module.css";
-import { Todo } from "../types";
+import { formatDistanceToNow } from "date-fns";
+import { Fragment } from "react";
+import { useSWRInfinite } from "swr";
 
-export const TodoList: React.FC = () => {
-  const { data: todos, error } = useTodos();
-
-  if (error != null) return <div>Error loading todos...</div>;
-  if (todos == null) return <div>Loading...</div>;
-
-  if (todos.length === 0) {
-    return <div className={styles.emptyState}>Try adding a todo ☝️️</div>;
-  }
-
-  return (
-    <ul className={styles.todoList}>
-      {todos.map(todo => (
-        <TodoItem todo={todo} />
-      ))}
-    </ul>
-  );
+type GentkType = Gentk & {
+  project: Project;
+  minter: User;
+  metadata: {
+    name: string;
+    thumbnailUri: string;
+  };
 };
 
-const TodoItem: React.FC<{ todo: Todo }> = ({ todo }) => (
-  <li className={styles.todo}>
-    <label
-      className={`${styles.label} ${todo.completed ? styles.checked : ""}`}
-    >
-      <input
-        type="checkbox"
-        checked={todo.completed}
-        className={`${styles.checkbox}`}
-        onChange={() => toggleTodo(todo)}
+const Gentk: React.FC<{
+  gentk: GentkType;
+}> = ({ gentk }) => (
+  <Tr>
+    <Td>{gentk.minter.alias || gentk.minter.address}</Td>
+    <Td>
+      <Link
+        color="blue.400"
+        href={`https://fxhash.xyz/generative/${gentk.project.issuerId}`}
+      >
+        {gentk.project.issuerId}
+      </Link>
+    </Td>
+    <Td>
+      <Image
+        boxSize="100px"
+        objectFit="cover"
+        src={`https://ipfs.io/ipfs/${
+          gentk.metadata.thumbnailUri.split("ipfs://")[1]
+        }`}
+        alt={gentk.metadata.name}
       />
-      {todo.text}
-    </label>
-
-    <button className={styles.deleteButton} onClick={() => deleteTodo(todo.id)}>
-      ✕
-    </button>
-  </li>
+    </Td>
+    <Td>
+      {formatDistanceToNow(new Date(gentk.timestamp), { addSuffix: true })}
+    </Td>
+  </Tr>
 );
 
-const AddTodoInput = () => {
-  const [text, setText] = useState("");
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+const getKey = (pageIndex, previousPageData) => {
+  if (previousPageData && !previousPageData.length) return null;
+  return `/api/fxindex?cursor=${pageIndex * 20}`;
+};
+
+const GentkList: React.FC = () => {
+  const { data, error, size, setSize } = useSWRInfinite(getKey, fetcher);
+
+  const isLoading = !data && !error;
+  const isLoadingMore =
+    isLoading || (size > 0 && data && typeof data[size - 1] === "undefined");
+  const isEmpty = data?.[0]?.length === 0;
+  const isReachingEnd = isEmpty || (data && data[data.length - 1]?.length < 20);
+
+  if (error != null) return <div>Error loading Gentks...</div>;
+  if (isLoading) return <div>Loading...</div>;
 
   return (
-    <form
-      onSubmit={async e => {
-        e.preventDefault();
-        createTodo(text);
-        setText("");
-      }}
-      className={styles.addTodo}
-    >
-      <input
-        className={styles.input}
-        placeholder="Buy some milk"
-        value={text}
-        onChange={e => setText(e.target.value)}
-      />
-      <button className={styles.addButton}>Add</button>
-    </form>
+    <Flex direction="column" mb={16} alignItems="center">
+      <TableContainer mb={8}>
+        <Table variant="simple">
+          <Thead>
+            <Tr>
+              <Th>user</Th>
+              <Th>project</Th>
+              <Th>preview</Th>
+              <Th>time</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {data.map((page, i) => (
+              <Fragment key={i}>
+                {page.map((gentk) => (
+                  <Gentk key={gentk.id} gentk={gentk} />
+                ))}
+              </Fragment>
+            ))}
+          </Tbody>
+        </Table>
+      </TableContainer>
+      {!isReachingEnd && (
+        <Button onClick={() => setSize(size + 1)} isLoading={isLoadingMore}>
+          Load more
+        </Button>
+      )}
+    </Flex>
   );
 };
 
 const Home: NextPage = () => {
   return (
-    <div className={styles.container}>
+    <Flex direction="column" justifyContent="center" alignItems="center">
       <Head>
-        <title>Railway NextJS Prisma</title>
+        <title>fxindex</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <header className={styles.header}>
-        <h1 className={styles.title}>Todos</h1>
-        <h2 className={styles.desc}>
-          NextJS app connected to Postgres using Prisma and hosted on{" "}
-          <a href="https://railway.app">Railway</a>
-        </h2>
-      </header>
+      <Heading p={16}>fxindex gentks</Heading>
 
-      <main className={styles.main}>
-        <AddTodoInput />
-
-        <TodoList />
-      </main>
-    </div>
+      <Flex direction="column" justify="center" align="center" minWidth={500}>
+        <GentkList />
+      </Flex>
+    </Flex>
   );
 };
 

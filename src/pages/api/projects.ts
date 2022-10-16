@@ -1,13 +1,18 @@
 import { PrismaClient } from "@prisma/client";
 import { TransactionOperation } from "@tzkt/sdk-api";
+import { NextApiRequest, NextApiResponse } from "next";
 import {
+  BATCH_LIMIT,
   getMostRecentTransactionsBySender,
   getTransactionsBetween,
+  requeue,
 } from "../../lib";
 
 const prisma = new PrismaClient();
 
 const ISSUER_V0_CONTRACT = "KT1AEVuykWeuuFX7QkEAMNtffzwhe1Z98hJS";
+
+const requeueProjects = requeue("projects");
 
 const indexProjectFromTransaction = ({
   sender,
@@ -38,8 +43,8 @@ const indexProjectFromTransaction = ({
     },
   });
 
-const indexProjects = async (req, res) => {
-  const { from, to, offset = 0 } = JSON.parse(req.body);
+const indexProjects = async (req: NextApiRequest, res: NextApiResponse) => {
+  const { from, to, offset = 0 } = req.body;
 
   if (!from || !to) {
     res.status(400).json({ error: "from and to are required" });
@@ -63,6 +68,10 @@ const indexProjects = async (req, res) => {
       indexProjectFromTransaction
     )
   );
+
+  if (transactions.length === BATCH_LIMIT) {
+    await requeueProjects({ from, to, offset: offset + BATCH_LIMIT });
+  }
 
   res.status(200).json({ success: true });
 };

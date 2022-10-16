@@ -5,6 +5,7 @@ import {
   TokenTransfer,
   TransactionOperation,
 } from "@tzkt/sdk-api";
+import { NextApiRequest, NextApiResponse } from "next";
 import { BATCH_LIMIT, getTransactionsBetween, requeue } from "../../lib";
 
 const prisma = new PrismaClient();
@@ -60,10 +61,8 @@ const indexGentkFromTransaction = ({
     update: {},
   });
 
-const indexGentks = async (req, res) => {
+const indexGentks = async (req: NextApiRequest, res: NextApiResponse) => {
   const { from, to, offset = 0 } = req.body;
-
-  console.log("running with params", req.body);
 
   if (!from || !to) {
     res.status(400).json({ error: "from and to are required" });
@@ -82,16 +81,11 @@ const indexGentks = async (req, res) => {
     },
   });
 
-  console.log("transactions fetched");
-
   const tokens = await tokensGetTokenTransfers({
     transactionId: {
       in: transactions.map((t) => t.id),
     },
-    limit: BATCH_LIMIT,
   });
-
-  console.log("tokens fetched");
 
   const tokensByTransactionId = tokens.reduce(
     (acc, t) => ({
@@ -110,12 +104,8 @@ const indexGentks = async (req, res) => {
     )
   );
 
-  console.log(transactions.length + " transactions indexed");
-
   if (transactions.length === BATCH_LIMIT) {
-    console.log("requeueing");
     await requeueGentks({ from, to, offset: offset + BATCH_LIMIT });
-    console.log("requeued!!!");
   }
 
   res.status(200).json({ success: true });

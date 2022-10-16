@@ -2,9 +2,6 @@ import { operationsGetTransactions, TransactionOperation } from "@tzkt/sdk-api";
 
 const BATCH_LIMIT = 100;
 
-const QSTASH_TOKEN =
-  "eyJVc2VySUQiOiJhYzdiZWNhYy1jMjI1LTRlZTQtOWMzMy05ZGM4YjE4MjdkMjMiLCJQYXNzd29yZCI6Ijg0N2MxNGFjZTUyMzRmNmNiODk1MzZiNDdjNjc5MmUxIn0=";
-
 const requeue =
   (route: string) =>
   async (params: { from: string; to: string; offset: number }) =>
@@ -13,7 +10,7 @@ const requeue =
       {
         body: JSON.stringify(params),
         headers: {
-          Authorization: `Bearer ${QSTASH_TOKEN}`,
+          Authorization: `Bearer ${process.env.QSTASH_TOKEN}`,
           "Content-Type": "application/json",
         },
         method: "POST",
