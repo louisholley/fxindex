@@ -2,20 +2,19 @@ import { operationsGetTransactions, TransactionOperation } from "@tzkt/sdk-api";
 
 const BATCH_LIMIT = 100;
 
+const APP_URL = "https://fxindex.up.railway.app";
+
 const requeue =
   (route: string) =>
   async (params: { from: string; to: string; offset: number }) =>
-    fetch(
-      `https://qstash.upstash.io/v1/publish/https://fxindex.up.railway.app/api/${route}`,
-      {
-        body: JSON.stringify(params),
-        headers: {
-          Authorization: `Bearer ${process.env.QSTASH_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      }
-    );
+    fetch(`https://qstash.upstash.io/v1/publish/${APP_URL}/api/${route}`, {
+      body: JSON.stringify(params),
+      headers: {
+        Authorization: `Bearer ${process.env.QSTASH_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
 
 const getMostRecentTransactionsBySender = (
   transactions: TransactionOperation[]
@@ -54,4 +53,5 @@ export {
   getMostRecentTransactionsBySender,
   getTransactionsBetween,
   BATCH_LIMIT,
+  APP_URL,
 };
